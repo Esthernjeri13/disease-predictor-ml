@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict AI — Disease Prediction System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #060910;
+    --bg2:      #0c1120;
+    --bg3:      #111827;
+    --panel:    #131d2e;
+    --border:   #1e2d45;
+    --teal:     #0d9488;
+    --teal2:    #14b8a6;
+    --mint:     #5eead4;
+    --white:    #f0f9ff;
+    --gray:     #64748b;
+    --gray2:    #94a3b8;
+    --danger:   #ef4444;
+    --warn:     #f59e0b;
+    --success:  #22c55e;
+    --purple:   #8b5cf6;
+    --sky:      #38bdf8;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+ 
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+ 
+  /* ── Animated background ── */
+  .bg-grid {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(13,148,136,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(13,148,136,.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .bg-glow {
+    position: fixed; pointer-events: none; z-index: 0;
+    border-radius: 50%; filter: blur(120px); opacity: 0.12;
+    animation: drift 8s ease-in-out infinite alternate;
+  }
+  .bg-glow-1 { width: 600px; height: 600px; background: #0d9488; top: -200px; left: -200px; }
+  .bg-glow-2 { width: 500px; height: 500px; background: #8b5cf6; bottom: -150px; right: -150px; animation-delay: -4s; }
+  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.1); } }
+ 
+  /* ── Layout ── */
+  .shell { position: relative; z-index: 1; }
+ 
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(6,9,16,.8);
+    backdrop-filter: blur(16px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    display: flex; align-items: center; gap: .75rem;
+    font-family: var(--font-head); font-size: 1.25rem; font-weight: 800;
+    color: var(--white); text-decoration: none;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; background: var(--teal);
+    border-radius: 10px; display: grid; place-items: center; font-size: 1.1rem;
+  }
+  .logo span { color: var(--teal2); }
+  .header-nav { display: flex; gap: .5rem; }
+  .nav-btn {
+    padding: .4rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--gray2); font-family: var(--font-body);
+    font-size: .85rem; cursor: pointer; transition: all .2s;
+  }
+  .nav-btn:hover, .nav-btn.active { background: var(--panel); color: var(--white); border-color: var(--teal); }
+  .status-pill {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .35rem .9rem; border-radius: 20px;
+    background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25);
+    font-size: .78rem; color: #86efac;
+  }
+  .status-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+ 
+  /* ── Main tabs ── */
+  .main { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+  .tabs { display: flex; gap: .5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: .5rem; }
+  .tab {
+    padding: .6rem 1.25rem; border-radius: 8px 8px 0 0; border: none;
+    background: transparent; color: var(--gray); font-family: var(--font-body);
+    font-size: .9rem; font-weight: 500; cursor: pointer; transition: all .2s;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--gray2); }
+  .tab.active { color: var(--teal2); border-bottom-color: var(--teal2); background: rgba(13,148,136,.05); }
+  .tab-pane { display: none; animation: fadeIn .3s ease; }
+  .tab-pane.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+ 
+  /* ── Cards ── */
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.5rem;
+  }
+  .card-title {
+    font-family: var(--font-head); font-size: 1rem; font-weight: 700;
+    color: var(--white); margin-bottom: 1.25rem; display: flex; align-items: center; gap: .5rem;
+  }
+  .card-title .icon { color: var(--teal2); font-size: 1.1rem; }
+ 
+  /* ─────────────────────────────────────────────
+     DIAGNOSE TAB
+  ───────────────────────────────────────────── */
+  .diagnose-grid { display: grid; grid-template-columns: 1fr 420px; gap: 1.5rem; align-items: start; }
+ 
+  /* Symptom selector */
+  .symptom-search-wrap { position: relative; margin-bottom: 1.25rem; }
+  .symptom-search {
+    width: 100%; padding: .65rem 1rem .65rem 2.5rem;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--white); font-family: var(--font-body); font-size: .9rem;
+    outline: none; transition: border-color .2s;
+  }
+  .symptom-search:focus { border-color: var(--teal); }
+  .search-icon { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: var(--gray); font-size: .9rem; }
+ 
+  .symptom-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: .6rem; max-height: 380px; overflow-y: auto;
+    padding-right: .25rem;
+  }
+  .symptom-grid::-webkit-scrollbar { width: 4px; }
+  .symptom-grid::-webkit-scrollbar-track { background: transparent; }
+  .symptom-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+ 
+  .symptom-chip {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .55rem .85rem; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg3);
+    cursor: pointer; transition: all .18s; user-select: none;
+    font-size: .82rem; color: var(--gray2);
+  }
+  .symptom-chip:hover { border-color: var(--teal); color: var(--white); background: rgba(13,148,136,.08); }
+  .symptom-chip.selected { border-color: var(--teal2); background: rgba(13,148,136,.18); color: var(--mint); }
+  .symptom-chip.hidden { display: none; }
+  .chip-check {
+    width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid currentColor;
+    display: grid; place-items: center; flex-shrink: 0; transition: background .15s;
+    font-size: .6rem;
+  }
+  .symptom-chip.selected .chip-check { background: var(--teal2); border-color: var(--teal2); color: var(--bg); }
+ 
+  .selected-count {
+    margin-top: 1rem; padding: .6rem 1rem;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+    display: flex; align-items: center; justify-content: space-between; font-size: .85rem;
+  }
+  .selected-count span { color: var(--teal2); font-weight: 600; }
+  .clear-btn {
+    background: none; border: none; color: var(--gray); font-size: .8rem;
+    cursor: pointer; font-family: var(--font-body); transition: color .2s;
+  }
+  .clear-btn:hover { color: var(--danger); }
+ 
+  .predict-btn {
+    width: 100%; margin-top: 1.25rem; padding: .9rem 1.5rem;
+    background: linear-gradient(135deg, var(--teal), var(--teal2));
+    border: none; border-radius: 12px; color: var(--bg);
+    font-family: var(--font-head); font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all .2s; letter-spacing: .02em;
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+  }
+  .predict-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(13,148,136,.35); }
+  .predict-btn:active { transform: translateY(0); }
+  .predict-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+ 
+  /* Result panel */
+  .result-panel { position: sticky; top: 100px; }
+ 
+  .result-empty {
+    text-align: center; padding: 3rem 1rem; color: var(--gray);
+  }
+  .result-empty .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; opacity: .4; }
+  .result-empty p { font-size: .9rem; line-height: 1.6; }
+ 
+  .result-content { display: none; }
+  .result-content.show { display: block; }
+ 
+  /* Top prediction */
+  .top-disease {
+    padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem;
+    border: 1px solid var(--border); position: relative; overflow: hidden;
+  }
+  .top-disease::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--d-color, var(--teal)) 0%, transparent 60%);
+    opacity: .08;
+  }
+  .disease-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: .75rem; }
+  .disease-icon-wrap { font-size: 2.5rem; }
+  .severity-badge {
+    padding: .2rem .65rem; border-radius: 20px; font-size: .72rem; font-weight: 600;
+    border: 1px solid; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .severity-Low { color: #86efac; border-color: rgba(134,239,172,.3); background: rgba(134,239,172,.08); }
+  .severity-Medium { color: #fcd34d; border-color: rgba(252,211,77,.3); background: rgba(252,211,77,.08); }
+  .severity-High { color: #fca5a5; border-color: rgba(252,165,165,.3); background: rgba(252,165,165,.08); }
+  .severity-Critical { color: #f87171; border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.12); }
+ 
+  .disease-name { font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; margin-bottom: .25rem; }
+  .disease-desc { font-size: .82rem; color: var(--gray2); line-height: 1.55; }
+ 
+  .confidence-bar-wrap { margin-top: 1rem; }
+  .confidence-label { display: flex; justify-content: space-between; font-size: .78rem; color: var(--gray2); margin-bottom: .4rem; }
+  .confidence-pct { color: var(--teal2); font-weight: 700; font-size: .95rem; }
+  .bar-track { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--teal), var(--mint)); transition: width .8s cubic-bezier(.34,1.56,.64,1); }
+ 
+  /* All predictions */
+  .predictions-list { display: flex; flex-direction: column; gap: .5rem; margin-top: 1rem; }
+  .pred-row {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .6rem .9rem; border-radius: 8px; background: var(--bg3); border: 1px solid var(--border);
+  }
+  .pred-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .pred-name { font-size: .85rem; flex: 1; }
+  .pred-pct { font-family: var(--font-mono); font-size: .82rem; color: var(--gray2); }
+  .pred-bar-wrap { width: 80px; }
+  .pred-bar { height: 4px; background: var(--bg2); border-radius: 2px; overflow: hidden; }
+  .pred-bar-inner { height: 100%; border-radius: 2px; transition: width .6s ease; }
+ 
+  /* Disclaimer */
+  .disclaimer {
+    margin-top: 1rem; padding: .75rem 1rem; border-radius: 10px;
+    background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.2);
+    font-size: .78rem; color: #fbbf24; line-height: 1.5;
+    display: flex; gap: .5rem; align-items: flex-start;
+  }
+ 
+  /* ── MODEL PERFORMANCE TAB ── */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .metric-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; text-align: center;
+  }
+  .metric-value { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: var(--teal2); }
+  .metric-label { font-size: .78rem; color: var(--gray); margin-top: .25rem; }
+  .metric-sub { font-size: .72rem; color: var(--gray2); margin-top: .5rem; }
+ 
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+ 
+  /* Per-disease table */
+  .disease-table { width: 100%; border-collapse: collapse; }
+  .disease-table th {
+    text-align: left; padding: .6rem .75rem; font-size: .75rem;
+    color: var(--gray); text-transform: uppercase; letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
+  }
+  .disease-table td { padding: .6rem .75rem; font-size: .84rem; border-bottom: 1px solid rgba(30,45,69,.5); }
+  .disease-table tr:last-child td { border-bottom: none; }
+  .f1-bar { display: flex; align-items: center; gap: .5rem; }
+  .f1-track { flex: 1; height: 5px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+  .f1-fill { height: 100%; border-radius: 3px; }
+ 
+  /* Confusion matrix */
+  .cm-container { overflow-x: auto; }
+  .cm-table { border-collapse: collapse; font-size: .72rem; font-family: var(--font-mono); }
+  .cm-table th { padding: .35rem .5rem; color: var(--gray); font-weight: 500; }
+  .cm-table td {
+    width: 48px; height: 42px; text-align: center; border: 1px solid var(--border);
+    font-weight: 500; transition: background .2s;
+  }
+  .cm-label { color: var(--gray2); font-size: .7rem; writing-mode: vertical-lr; transform: rotate(180deg); padding: .5rem .2rem; }
+  .cm-row-label { color: var(--gray2); font-size: .7rem; padding: .25rem .5rem; text-align: right; white-space: nowrap; }
+ 
+  /* Feature importance */
+  .fi-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; }
+  .fi-name { font-size: .82rem; color: var(--gray2); width: 140px; flex-shrink: 0; text-transform: capitalize; }
+  .fi-track { flex: 1; height: 8px; background: var(--bg2); border-radius: 4px; overflow: hidden; }
+  .fi-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--teal), var(--mint)); }
+  .fi-val { font-family: var(--font-mono); font-size: .76rem; color: var(--gray); width: 40px; text-align: right; }
+ 
+  /* ── ABOUT TAB ── */
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .about-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem;
+  }
+  .about-icon { font-size: 2rem; margin-bottom: .75rem; }
+  .about-title { font-family: var(--font-head); font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
+  .about-body { font-size: .85rem; color: var(--gray2); line-height: 1.7; }
+  .about-body code { font-family: var(--font-mono); font-size: .8rem; color: var(--mint); background: rgba(94,234,212,.08); padding: .1rem .35rem; border-radius: 4px; }
+  .about-steps { counter-reset: step; list-style: none; margin-top: .75rem; }
+  .about-steps li { counter-increment: step; display: flex; gap: .75rem; align-items: flex-start; margin-bottom: .6rem; font-size: .84rem; color: var(--gray2); }
+  .about-steps li::before {
+    content: counter(step);
+    display: grid; place-items: center;
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(13,148,136,.15); border: 1px solid rgba(13,148,136,.3);
+    color: var(--teal2); font-size: .72rem; font-weight: 700;
+  }
+ 
+  /* Spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3); border-top-color: currentColor; border-radius: 50%; animation: spin .7s linear infinite; }
+ 
+  /* Responsive */
+  @media (max-width: 900px) {
+    .diagnose-grid { grid-template-columns: 1fr; }
+    .result-panel { position: static; }
+    .metrics-grid { grid-template-columns: repeat(2,1fr); }
+    .two-col, .three-col, .about-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+ 
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+ 
+<div class="shell">
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🩺</div>
+      Medi<span>Predict</span> AI
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn active" onclick="switchTab('diagnose')">Diagnose</button>
+      <button class="nav-btn" onclick="switchTab('performance')">Model Performance</button>
+      <button class="nav-btn" onclick="switchTab('about')">About</button>
+    </nav>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      Models Loaded · NB 65.9% acc
+    </div>
+  </header>
+ 
+  <!-- ── MAIN ── -->
+  <main class="main">
+ 
+    <!-- ════════════════════ DIAGNOSE TAB ════════════════════ -->
+    <div class="tab-pane active" id="tab-diagnose">
+      <div class="diagnose-grid">
+ 
+        <!-- Left: symptom selector -->
+        <div class="card">
+          <div class="card-title"><span class="icon">🔍</span> Select Patient Symptoms</div>
+          <div class="symptom-search-wrap">
+            <span class="search-icon">🔎</span>
+            <input type="text" class="symptom-search" placeholder="Search symptoms…" oninput="filterSymptoms(this.value)" id="symSearch">
+          </div>
+          <div class="symptom-grid" id="symptomGrid"></div>
+          <div class="selected-count">
+            <div><span id="selectedCount">0</span> symptoms selected</div>
+            <button class="clear-btn" onclick="clearAll()">Clear all</button>
+          </div>
+          <button class="predict-btn" id="predictBtn" onclick="runPrediction()" disabled>
+            <span id="btnText">⚡ Run Prediction</span>
+          </button>
+        </div>
+ 
+        <!-- Right: results -->
+        <div class="result-panel">
+          <div class="card">
+            <div class="card-title"><span class="icon">🎯</span> Diagnosis Result</div>
+ 
+            <div class="result-empty" id="resultEmpty">
+              <div class="empty-icon">🏥</div>
+              <p>Select symptoms from the left panel<br>and click <strong>Run Prediction</strong><br>to get an AI-powered diagnosis.</p>
+            </div>
+ 
+            <div class="result-content" id="resultContent">
+              <!-- Top prediction -->
+              <div class="top-disease" id="topDisease">
+                <div class="disease-header">
+                  <div class="disease-icon-wrap" id="diseaseIcon">🦟</div>
+                  <span class="severity-badge" id="severityBadge">High</span>
+                </div>
+                <div class="disease-name" id="diseaseName">Malaria</div>
+                <div class="disease-desc" id="diseaseDesc">Description here</div>
+                <div class="confidence-bar-wrap">
+                  <div class="confidence-label">
+                    <span>Confidence</span>
+                    <span class="confidence-pct" id="confPct">0%</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill" id="confBar" style="width:0%"></div></div>
+                </div>
+              </div>
+ 
+              <!-- All predictions -->
+              <div style="font-size:.78rem;color:var(--gray);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.06em;">All Predictions</div>
+              <div class="predictions-list" id="predictionsList"></div>
+ 
+              <div class="disclaimer">
+                <span>⚠️</span>
+                <span>This is an AI-assisted tool for educational purposes only. Always consult a qualified healthcare professional for accurate diagnosis and treatment.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- ════════════════════ PERFORMANCE TAB ════════════════════ -->
+    <div class="tab-pane" id="tab-performance">
+ 
+      <!-- Key metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value" id="m-nb-acc">65.9%</div>
+          <div class="metric-label">Naive Bayes Accuracy</div>
+          <div class="metric-sub">Test set (20% holdout)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">8</div>
+          <div class="metric-label">Disease Classes</div>
+          <div class="metric-sub">Cholera, Dengue, Flu…</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">20</div>
+          <div class="metric-label">Symptom Features</div>
+          <div class="metric-sub">Binary encoded (0/1)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">1,600</div>
+          <div class="metric-label">Training Records</div>
+          <div class="metric-sub">80/20 train-test split</div>
+        </div>
+      </div>
+ 
+      <div class="two-col">
+        <!-- Per-disease metrics -->
+        <div class="card">
+          <div class="card-title"><span class="icon">📊</span> Per-Disease Performance</div>
+          <table class="disease-table" id="diseaseTable"></table>
+        </div>
+ 
+        <!-- Feature importance -->
+        <div class="card">
+          <div class="card-title"><span class="icon">⚖️</span> Feature Importance</div>
+          <div id="featureImportance"></div>
+        </div>
+      </div>
+ 
+      <!-- Confusion matrix -->
+      <div class="card" style="margin-top:1.5rem;">
+        <div class="card-title"><span class="icon">🔢</span> Confusion Matrix — Naive Bayes</div>
+        <p style="font-size:.82rem;color:var(--gray);margin-bottom:1rem;">Rows = Actual disease &nbsp;·&nbsp; Columns = Predicted disease &nbsp;·&nbsp; Diagonal = correct predictions</p>
+        <div class="cm-container">
+          <table class="cm-table" id="cmTable"></table>
+        </div>
+      </div>
+ 
+    </div>
+ 
+    <!-- ════════════════════ ABOUT TAB ════════════════════ -->
+    <div class="tab-pane" id="tab-about">
+      <div class="about-grid">
+ 
+        <div class="about-card">
+          <div class="about-icon">🧠</div>
+          <div class="about-title">How MediPredict Works</div>
+          <div class="about-body">
+            MediPredict uses a <code>Gaussian Naive Bayes</code> classifier trained on a labelled symptom-disease dataset.
+            The model applies Bayes' theorem to compute the posterior probability of each disease given the observed symptoms,
+            then returns the disease with the highest probability.
+            <ul class="about-steps">
+              <li>User selects present symptoms as binary inputs (1 = present, 0 = absent)</li>
+              <li>Gaussian NB computes log-likelihood for each disease class using learned mean and variance per feature</li>
+              <li>Log-likelihoods are summed with class priors to get posterior scores</li>
+              <li>Softmax converts log-posteriors to probabilities for display</li>
+              <li>Top prediction + confidence ranking are shown to the user</li>
+            </ul>
+          </div>
+        </div>
+ 
+        <div class="about-card">
+          <div class="about-icon">📐</div>
+          <div class="about-title">The Math Behind It</div>
+          <div class="about-body">
+            Gaussian Naive Bayes computes:
+            <br><br>
+            <code>P(C|X) ∝ P(C) × ∏ P(xᵢ|C)</code>
+            <br><br>
+            Where <code>P(xᵢ|C)</code> follows a Gaussian distribution:
+            <br><br>
+            <code>P(x|C) = exp(−(x−μ)²/2σ²) / √(2πσ²)</code>
+            <br><br>
+            In practice, log-space arithmetic is used to avoid underflow. The model learns one <code>μ</code> and <code>σ²</code>
+            per feature per class from the training data. At inference time, the model runs entirely in the browser — no server required.
+          </div>
+        </div>
+ 
+        <div class="about-card">
+          <div class="about-icon">🗃️</div>
+          <div class="about-title">Dataset Details</div>
+          <div class="about-body">
+            The training dataset was synthetically generated based on clinically-informed symptom profiles for 8 diseases.
+            <ul class="about-steps">
+              <li><strong>1,600 patient records</strong> — 200 per disease class</li>
+              <li><strong>20 binary symptoms</strong> — fever, cough, rash, jaundice and more</li>
+              <li>Symptom probabilities derived from real clinical literature profiles</li>
+              <li>5% random noise applied to simulate real-world variation</li>
+              <li>Stratified 80/20 train-test split for unbiased evaluation</li>
+            </ul>
+          </div>
+        </div>
+ 
+        <div class="about-card">
+          <div class="about-icon">⚠️</div>
+          <div class="about-title">Limitations & Ethics</div>
+          <div class="about-body">
+            <ul class="about-steps">
+              <li>This model is trained on <strong>synthetic data</strong> and is not validated on real clinical records</li>
+              <li>Symptom overlap between diseases (e.g. Malaria vs Influenza) reduces accuracy in ambiguous cases</li>
+              <li>Binary symptom encoding ignores symptom severity and duration</li>
+              <li>The tool is for <strong>educational purposes only</strong> — never use it to replace professional medical advice</li>
+              <li>Real clinical deployment would require IRB approval, clinical validation, and regulatory compliance</li>
+            </ul>
+          </div>
+        </div>
+ 
+      </div>
+    </div>
+ 
+  </main>
+</div>
+ 
+<script>
+// ─── Embedded ML Data ────────────────────────────────────────────────────────
+const ML = {"nb_params": {"classes": ["Cholera", "Common Cold", "Dengue", "Hepatitis", "Influenza", "Malaria", "Pneumonia", "Typhoid"], "class_prior": [-2.0794415416798357, -2.0794415416798357, -2.0794415416798357, -2.0794415416798357, -2.0794415416798357, -2.0794415416798357, -2.0794415416798357, -2.0794415416798357], "theta": [[0.5375, 0.3625, 0.15625, 0.6625, 0.50625, 0.14375, 0.14375, 0.81875, 0.85, 0.8375, 0.08125, 0.1375, 0.15625, 0.325, 0.65625, 0.175, 0.05, 0.9, 0.075, 0.05], [0.275, 0.4375, 0.69375, 0.4, 0.225, 0.84375, 0.73125, 0.21875, 0.15625, 0.1375, 0.05, 0.11875, 0.24375, 0.23125, 0.25, 0.1375, 0.05625, 0.0375, 0.06875, 0.0875], [0.8375, 0.76875, 0.18125, 0.7625, 0.86875, 0.11875, 0.20625, 0.59375, 0.23125, 0.11875, 0.5, 0.80625, 0.4875, 0.5625, 0.6625, 0.15, 0.15625, 0.31875, 0.05, 0.19375], [0.53125, 0.45, 0.1625, 0.825, 0.5875, 0.0375, 0.1, 0.6625, 0.28125, 0.23125, 0.04375, 0.23125, 0.20625, 0.3875, 0.90625, 0.1125, 0.14375, 0.75625, 0.85625, 0.2875], [0.8875, 0.7625, 0.75, 0.86875, 0.875, 0.71875, 0.6375, 0.4375, 0.20625, 0.25, 0.04375, 0.21875, 0.70625, 0.45, 0.6125, 0.3375, 0.16875, 0.125, 0.03125, 0.2], [0.8625, 0.70625, 0.31875, 0.83125, 0.78125, 0.125, 0.24375, 0.53125, 0.29375, 0.41875, 0.16875, 0.4875, 0.8875, 0.86875, 0.70625, 0.28125, 0.14375, 0.23125, 0.1625, 0.19375], [0.8375, 0.6125, 0.8375, 0.71875, 0.51875, 0.31875, 0.45, 0.3875, 0.2125, 0.1125, 0.05, 0.16875, 0.71875, 0.36875, 0.525, 0.89375, 0.48125, 0.325, 0.01875, 0.14375], [0.84375, 0.75625, 0.3125, 0.75625, 0.58125, 0.13125, 0.3, 0.7125, 0.46875, 0.51875, 0.23125, 0.24375, 0.39375, 0.4875, 0.8875, 0.18125, 0.11875, 0.75, 0.15, 0.1]], "var": [[0.24859375024937516, 0.23109375024937517, 0.131835937749375, 0.22359375024937467, 0.24996093774937495, 0.12308593774937486, 0.12308593774937486, 0.1483984377493746, 0.12750000024937555, 0.13609375024937553, 0.0746484377493752, 0.11859375024937532, 0.131835937749375, 0.2193750002493753, 0.225585937749375, 0.14437500024937522, 0.04750000024937519, 0.09000000024937485, 0.06937500024937514, 0.04750000024937525], [0.1993750002493749, 0.246093750249375, 0.21246093774937544, 0.24000000024937446, 0.17437500024937524, 0.131835937749375, 0.19652343774937467, 0.170898437749375, 0.131835937749375, 0.11859375024937514, 0.04750000024937511, 0.10464843774937506, 0.18433593774937498, 0.1777734377493745, 0.187500000249375, 0.11859375024937524, 0.053085937749374805, 0.03609375024937496, 0.0640234377493751, 0.0798437502493751], [0.13609375024937553, 0.17777343774937437, 0.14839843774937467, 0.18109375024937474, 0.1140234377493748, 0.1046484377493752, 0.16371093774937528, 0.241210937749375, 0.1777734377493744, 0.10464843774937502, 0.250000000249375, 0.1562109377493746, 0.24984375024937483, 0.246093750249375, 0.22359375024937467, 0.12750000024937544, 0.131835937749375, 0.21714843774937562, 0.047500000249375104, 0.15621093774937472], [0.249023437749375, 0.2475000002493751, 0.1360937502493755, 0.14437500024937522, 0.2423437502493752, 0.03609375024937488, 0.09000000024937486, 0.22359375024937464, 0.202148437749375, 0.1777734377493748, 0.041835937749375045, 0.1777734377493745, 0.1637109377493754, 0.23734375024937496, 0.084960937749375, 0.09984375024937465, 0.12308593774937489, 0.184335937749375, 0.12308593774937489, 0.2048437502493747], [0.09984375024937461, 0.1810937502493746, 0.187500000249375, 0.11402343774937482, 0.109375000249375, 0.202148437749375, 0.23109375024937515, 0.246093750249375, 0.16371093774937534, 0.187500000249375, 0.041835937749375045, 0.170898437749375, 0.20746093774937513, 0.24750000024937513, 0.237343750249375, 0.22359375024937464, 0.14027343774937492, 0.109375000249375, 0.030273437749375, 0.16000000024937466], [0.1185937502493752, 0.2074609377493751, 0.21714843774937556, 0.14027343774937492, 0.170898437749375, 0.109375000249375, 0.18433593774937498, 0.249023437749375, 0.20746093774937505, 0.24339843774937464, 0.14027343774937492, 0.24984375024937486, 0.09984375024937461, 0.11402343774937466, 0.2074609377493751, 0.202148437749375, 0.12308593774937486, 0.17777343774937474, 0.13609375024937553, 0.15621093774937467], [0.1360937502493754, 0.23734375024937496, 0.13609375024937548, 0.202148437749375, 0.24964843774937545, 0.21714843774937556, 0.24750000024937518, 0.237343750249375, 0.1673437502493755, 0.09984375024937461, 0.04750000024937524, 0.14027343774937495, 0.202148437749375, 0.2327734377493754, 0.24937500024937542, 0.09496093774937477, 0.24964843774937548, 0.2193750002493753, 0.01839843774937497, 0.12308593774937486], [0.131835937749375, 0.184335937749375, 0.214843750249375, 0.184335937749375, 0.24339843774937484, 0.11402343774937475, 0.21000000024937487, 0.20484375024937476, 0.249023437749375, 0.24964843774937523, 0.1777734377493745, 0.184335937749375, 0.23871093774937496, 0.24984375024937486, 0.09984375024937461, 0.14839843774937475, 0.10464843774937502, 0.187500000249375, 0.12750000024937552, 0.09000000024937488]]}, "nb_accuracy": 65.94, "confusion_matrix": [[31, 0, 0, 5, 0, 0, 0, 4], [1, 33, 1, 0, 2, 1, 1, 1], [0, 0, 27, 0, 3, 4, 2, 4], [1, 1, 0, 32, 0, 2, 1, 3], [1, 4, 2, 0, 21, 3, 4, 5], [1, 2, 6, 0, 7, 18, 0, 6], [0, 2, 1, 1, 1, 1, 34, 0], [7, 2, 2, 4, 4, 4, 2, 15]], "per_disease": {"Cholera": {"precision": 73.8, "recall": 77.5, "f1": 75.6}, "Common Cold": {"precision": 75.0, "recall": 82.5, "f1": 78.6}, "Dengue": {"precision": 69.2, "recall": 67.5, "f1": 68.4}, "Hepatitis": {"precision": 76.2, "recall": 80.0, "f1": 78.0}, "Influenza": {"precision": 55.3, "recall": 52.5, "f1": 53.8}, "Malaria": {"precision": 54.5, "recall": 45.0, "f1": 49.3}, "Pneumonia": {"precision": 77.3, "recall": 85.0, "f1": 81.0}, "Typhoid": {"precision": 39.5, "recall": 37.5, "f1": 38.5}}, "feature_importance": [["abdominal_pain", 20.068], ["runny_nose", 17.465], ["chills", 15.482], ["cough", 14.282], ["jaundice", 13.421], ["shortness_of_breath", 12.793], ["vomiting", 12.726], ["loss_of_appetite", 12.036], ["diarrhea", 11.586], ["sore_throat", 11.299], ["body_aches", 10.696], ["fever", 9.758], ["joint_pain", 9.677], ["headache", 6.783], ["fatigue", 5.804], ["rash", 5.583], ["nausea", 5.48], ["chest_pain", 4.884], ["sweating", 4.656], ["swollen_lymph_nodes", 1.954]], "disease_info": {"Malaria": {"icon": "\ud83e\udd9f", "color": "#ef4444", "severity": "High", "desc": "Parasitic infection spread by mosquitoes. Common in tropical regions."}, "Influenza": {"icon": "\ud83e\udd27", "color": "#f97316", "severity": "Medium", "desc": "Highly contagious viral respiratory illness. Seasonal outbreaks are common."}, "Dengue": {"icon": "\ud83e\udd9f", "color": "#eab308", "severity": "High", "desc": "Viral infection from Aedes mosquitoes. Can cause severe bleeding in advanced cases."}, "Typhoid": {"icon": "\ud83e\udda0", "color": "#a855f7", "severity": "High", "desc": "Bacterial infection from contaminated food or water. Requires antibiotic treatment."}, "Cholera": {"icon": "\ud83d\udca7", "color": "#06b6d4", "severity": "Critical", "desc": "Severe diarrheal disease. Can be fatal without rapid rehydration treatment."}, "Pneumonia": {"icon": "\ud83e\udec1", "color": "#3b82f6", "severity": "High", "desc": "Lung infection causing breathing difficulties. Can be bacterial, viral or fungal."}, "Common Cold": {"icon": "\ud83e\udd12", "color": "#22c55e", "severity": "Low", "desc": "Common viral upper respiratory infection. Usually resolves within 7\u201310 days."}, "Hepatitis": {"icon": "\ud83e\udec0", "color": "#f59e0b", "severity": "Medium", "desc": "Liver inflammation usually caused by viral infection. Can become chronic."}}, "diseases": ["Cholera", "Common Cold", "Dengue", "Hepatitis", "Influenza", "Malaria", "Pneumonia", "Typhoid"], "symptoms": ["fever", "headache", "cough", "fatigue", "body_aches", "runny_nose", "sore_throat", "nausea", "vomiting", "diarrhea", "rash", "joint_pain", "chills", "sweating", "loss_of_appetite", "shortness_of_breath", "chest_pain", "abdominal_pain", "jaundice", "swollen_lymph_nodes"]};
+ 
+// ─── State ────────────────────────────────────────────────────────────────────
+const selected = new Set();
+ 
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+ 
+// ─── Build symptom grid ───────────────────────────────────────────────────────
+const EMOJI = {
+  fever:'🌡️', headache:'🤕', cough:'😮‍💨', fatigue:'😴', body_aches:'💪',
+  runny_nose:'👃', sore_throat:'🗣️', nausea:'🤢', vomiting:'🤮', diarrhea:'💧',
+  rash:'🔴', joint_pain:'🦴', chills:'🥶', sweating:'💦', loss_of_appetite:'🍽️',
+  shortness_of_breath:'😮', chest_pain:'❤️', abdominal_pain:'🫃', jaundice:'💛', swollen_lymph_nodes:'🔵'
+};
+ 
+function buildSymptomGrid() {
+  const grid = document.getElementById('symptomGrid');
+  ML.symptoms.forEach(sym => {
+    const label = sym.replace(/_/g, ' ');
+    const chip = document.createElement('div');
+    chip.className = 'symptom-chip';
+    chip.dataset.sym = sym;
+    chip.innerHTML = `<div class="chip-check"></div>${EMOJI[sym] || '•'} ${label}`;
+    chip.onclick = () => toggleSymptom(sym, chip);
+    grid.appendChild(chip);
+  });
+}
+ 
+function toggleSymptom(sym, chip) {
+  if (selected.has(sym)) { selected.delete(sym); chip.classList.remove('selected'); chip.querySelector('.chip-check').textContent = ''; }
+  else { selected.add(sym); chip.classList.add('selected'); chip.querySelector('.chip-check').textContent = '✓'; }
+  document.getElementById('selectedCount').textContent = selected.size;
+  document.getElementById('predictBtn').disabled = selected.size === 0;
+}
+ 
+function clearAll() {
+  selected.clear();
+  document.querySelectorAll('.symptom-chip').forEach(c => { c.classList.remove('selected'); c.querySelector('.chip-check').textContent = ''; });
+  document.getElementById('selectedCount').textContent = '0';
+  document.getElementById('predictBtn').disabled = true;
+  document.getElementById('resultEmpty').style.display = '';
+  document.getElementById('resultContent').classList.remove('show');
+}
+ 
+function filterSymptoms(q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll('.symptom-chip').forEach(c => {
+    const match = c.dataset.sym.replace(/_/g,' ').includes(lq);
+    c.classList.toggle('hidden', !match);
+  });
+}
+ 
+// ─── Gaussian NB inference (JavaScript) ──────────────────────────────────────
+function gaussianLogPdf(x, mean, variance) {
+  const eps = 1e-9;
+  const v = variance + eps;
+  return -0.5 * Math.log(2 * Math.PI * v) - ((x - mean) ** 2) / (2 * v);
+}
+ 
+function predict(selectedSymbols) {
+  const { classes, class_prior, theta, var: variances } = ML.nb_params;
+  const symptoms = ML.symptoms;
+ 
+  // Build input vector
+  const x = symptoms.map(s => selectedSymbols.has(s) ? 1 : 0);
+ 
+  // Compute log-posteriors
+  const logScores = classes.map((cls, ci) => {
+    let logP = class_prior[ci];
+    symptoms.forEach((_, fi) => {
+      logP += gaussianLogPdf(x[fi], theta[ci][fi], variances[ci][fi]);
+    });
+    return { disease: cls, logScore: logP };
+  });
+ 
+  // Softmax over log-scores for probabilities
+  const maxLog = Math.max(...logScores.map(s => s.logScore));
+  const exps = logScores.map(s => Math.exp(s.logScore - maxLog));
+  const sumExp = exps.reduce((a,b) => a+b, 0);
+  const probs = logScores.map((s, i) => ({ disease: s.disease, prob: exps[i] / sumExp }));
+ 
+  // Sort by probability descending
+  probs.sort((a,b) => b.prob - a.prob);
+  return probs;
+}
+ 
+// ─── Run prediction ───────────────────────────────────────────────────────────
+function runPrediction() {
+  const btn = document.getElementById('predictBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true;
+  btnText.innerHTML = '<div class="spinner"></div> Analysing…';
+ 
+  setTimeout(() => {
+    const results = predict(selected);
+    showResults(results);
+    btn.disabled = false;
+    btnText.textContent = '⚡ Run Prediction';
+  }, 600);
+}
+ 
+function showResults(results) {
+  document.getElementById('resultEmpty').style.display = 'none';
+  const content = document.getElementById('resultContent');
+  content.classList.add('show');
+ 
+  const top = results[0];
+  const info = ML.disease_info[top.disease] || { icon:'🦠', color:'#0d9488', severity:'Unknown', desc:'' };
+  const pct = Math.round(top.prob * 100);
+ 
+  // Update top disease card
+  const card = document.getElementById('topDisease');
+  card.style.setProperty('--d-color', info.color);
+  card.style.borderColor = info.color + '44';
+  document.getElementById('diseaseIcon').textContent = info.icon;
+  document.getElementById('diseaseName').textContent = top.disease;
+  document.getElementById('diseaseName').style.color = info.color;
+  document.getElementById('diseaseDesc').textContent = info.desc;
+  document.getElementById('severityBadge').textContent = info.severity;
+  document.getElementById('severityBadge').className = `severity-badge severity-${info.severity}`;
+  document.getElementById('confPct').textContent = pct + '%';
+ 
+  // Animate bar
+  const bar = document.getElementById('confBar');
+  bar.style.width = '0%';
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = pct + '%'; }));
+ 
+  // All predictions list
+  const list = document.getElementById('predictionsList');
+  list.innerHTML = '';
+  results.forEach((r, i) => {
+    const inf = ML.disease_info[r.disease] || { color: '#64748b' };
+    const p = Math.round(r.prob * 100);
+    const row = document.createElement('div');
+    row.className = 'pred-row';
+    row.innerHTML = `
+      <div class="pred-dot" style="background:${inf.color}"></div>
+      <div class="pred-name">${r.disease}</div>
+      <div class="pred-bar-wrap"><div class="pred-bar"><div class="pred-bar-inner" style="width:0%;background:${inf.color}" data-w="${p}"></div></div></div>
+      <div class="pred-pct">${p}%</div>`;
+    list.appendChild(row);
+  });
+  // Animate bars
+  setTimeout(() => {
+    list.querySelectorAll('.pred-bar-inner').forEach(b => { b.style.width = b.dataset.w + '%'; });
+  }, 100);
+}
+ 
+// ─── Build performance tab ────────────────────────────────────────────────────
+function buildPerformanceTab() {
+  // Per-disease table
+  const tbody = document.getElementById('diseaseTable');
+  const header = `<thead><tr>
+    <th>Disease</th><th>Precision</th><th>Recall</th><th>F1-Score</th>
+  </tr></thead><tbody>`;
+  let rows = '';
+  ML.diseases.forEach(d => {
+    const m = ML.per_disease[d];
+    const inf = ML.disease_info[d] || { color: '#64748b', icon: '🦠' };
+    const f1Color = m.f1 >= 70 ? '#22c55e' : m.f1 >= 55 ? '#f59e0b' : '#ef4444';
+    rows += `<tr>
+      <td><span style="margin-right:.4rem">${inf.icon}</span>${d}</td>
+      <td style="color:var(--gray2)">${m.precision}%</td>
+      <td style="color:var(--gray2)">${m.recall}%</td>
+      <td>
+        <div class="f1-bar">
+          <div class="f1-track"><div class="f1-fill" style="width:${m.f1}%;background:${f1Color}"></div></div>
+          <span style="font-size:.78rem;color:${f1Color};width:38px;text-align:right">${m.f1}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML = header + rows + '</tbody>';
+ 
+  // Feature importance
+  const fi = document.getElementById('featureImportance');
+  const maxFI = ML.feature_importance[0][1];
+  fi.innerHTML = ML.feature_importance.map(([name, val]) => `
+    <div class="fi-row">
+      <div class="fi-name">${name.replace(/_/g,' ')}</div>
+      <div class="fi-track"><div class="fi-fill" style="width:${(val/maxFI*100).toFixed(1)}%"></div></div>
+      <div class="fi-val">${val.toFixed(1)}</div>
+    </div>`).join('');
+ 
+  // Confusion matrix
+  buildConfusionMatrix();
+}
+ 
+function buildConfusionMatrix() {
+  const cm = ML.confusion_matrix;
+  const diseases = ML.diseases;
+  const shortNames = diseases.map(d => d.length > 8 ? d.slice(0,7)+'…' : d);
+ 
+  // Find max for color scaling
+  const flat = cm.flat();
+  const maxVal = Math.max(...flat);
+ 
+  let html = '<thead><tr><th></th>';
+  shortNames.forEach(n => { html += `<th class="cm-label">${n}</th>`; });
+  html += '</tr></thead><tbody>';
+ 
+  cm.forEach((row, ri) => {
+    html += `<tr><td class="cm-row-label">${shortNames[ri]}</td>`;
+    row.forEach((val, ci) => {
+      const isDiag = ri === ci;
+      let bg, color;
+      if (isDiag) {
+        const intensity = Math.round(val / maxVal * 100);
+        bg = `rgba(13,148,136,${0.1 + intensity/100*0.7})`;
+        color = val > 0 ? '#5eead4' : '#64748b';
+      } else if (val > 0) {
+        bg = `rgba(239,68,68,${val/maxVal*0.6})`;
+        color = '#fca5a5';
+      } else {
+        bg = 'transparent'; color = '#1e2d45';
+      }
+      html += `<td style="background:${bg};color:${color};font-weight:${isDiag?700:400}">${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('cmTable').innerHTML = html;
+}
+ 
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildSymptomGrid();
+buildPerformanceTab();
+</script>
+</body>
+</html>
